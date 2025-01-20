@@ -30,10 +30,10 @@ jobs:
       - name: Create Netlify site if it doesn't exist and store site ID
         id: create-site
         run: |
-          SITE_ID=$(netlify sites:list --json | jq -r '.[] | select(.name=="your-site-name") | .id')
+          SITE_ID=$(netlify sites:list --json | jq -r '.[] | select(.name=="0507253114-madex") | .id')
           if [ -z "$SITE_ID" ]; then
             echo "Creating new Netlify site..."
-            SITE_INFO=$(netlify sites:create --name your-site-name --json)
+            SITE_INFO=$(netlify sites:create --name 0507253114-madex --account-slug netlify-j1s6hx8 --json)
             SITE_ID=$(echo $SITE_INFO | jq -r '.id')
             echo "Created new site with ID: $SITE_ID"
           else
