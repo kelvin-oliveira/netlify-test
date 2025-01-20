@@ -1,12 +1,11 @@
-name: Deploy to Netlify
+name: Build and Deploy to Netlify
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     
     steps:
@@ -22,14 +21,29 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build project
+      - name: Build Next.js project
         run: npm run build
 
-      - name: Deploy to Netlify
-        uses: netlify/actions/cli@master
+      - name: Install Netlify CLI
+        run: npm install -g netlify-cli
+
+      - name: Create Netlify site if it doesn't exist and store site ID
+        id: create-site
+        run: |
+          SITE_ID=$(netlify sites:list --json | jq -r '.[] | select(.name=="your-site-name") | .id')
+          if [ -z "$SITE_ID" ]; then
+            echo "Creating new Netlify site..."
+            SITE_INFO=$(netlify sites:create --name your-site-name --json)
+            SITE_ID=$(echo $SITE_INFO | jq -r '.id')
+            echo "Created new site with ID: $SITE_ID"
+          else
+            echo "Site already exists with ID: $SITE_ID"
+          fi
+          echo "site_id=$SITE_ID" >> $GITHUB_OUTPUT
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        with:
-          args: deploy --dir=.next --prod
-          secrets: '["NETLIFY_AUTH_TOKEN", "NETLIFY_SITE_ID"]'
+
+      - name: Deploy to Netlify
+        run: netlify deploy --prod --dir=out --site="${{ steps.create-site.outputs.site_id }}"
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
